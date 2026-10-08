@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SACH.IN Search</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #000;
+            color: #ededed;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem 1rem;
+            -webkit-font-smoothing: antialiased;
+        }
+        .app {
+            width: 100%;
+            max-width: 520px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+            text-align: center;
+        }
+        .brand {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #fff;
+            cursor: pointer;
+            user-select: none;
+            transition: opacity 0.2s;
+        }
+        .brand:hover { opacity: 0.8; }
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+        .search-input {
+            width: 100%;
+            background: #09090b;
+            border: 1px solid #222226;
+            border-radius: 12px;
+            padding: 0.85rem 1.1rem;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        .search-input:focus {
+            background: #0d0d10;
+            border-color: #3f3f46;
+            box-shadow: 0 0 0 1px #3f3f46;
+        }
+        .search-input::placeholder { color: #52525b; font-size: 0.95rem; }
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 0.45rem;
+        }
+        .link-card {
+            background: #09090b;
+            border: 1px solid #1c1c20;
+            color: #d4d4d8;
+            padding: 0.6rem 0.85rem;
+            border-radius: 9px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s ease;
+        }
+        .link-card:hover {
+            background: #141418;
+            border-color: #383842;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .link-card svg {
+            color: #52525b;
+            transition: color 0.15s;
+        }
+        .link-card:hover svg { color: #e4e4e7; }
+        .chips-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.1rem;
+        }
+        .chip {
+            background: #09090b;
+            border: 1px solid #222226;
+            color: #e4e4e7;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .chip:hover {
+            border-color: #3f3f46;
+            background: #121216;
+            color: #fff;
+        }
+        .chip-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+        }
+        .chip-add {
+            border-style: dashed;
+            color: #71717a;
+            border-color: #27272a;
+        }
+        .chip-add:hover {
+            border-color: #52525b;
+            color: #fff;
+        }
+        .hint {
+            font-size: 0.72rem;
+            color: #52525b;
+            margin-top: 0.35rem;
+        }
+        .toast {
+            position: fixed;
+            bottom: 1.8rem;
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #f4f4f5;
+            padding: 0.55rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        /* Minimalist Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal {
+            background: #0e0e11;
+            border: 1px solid #27272a;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 360px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            text-align: left;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.9);
+            transform: scale(0.96);
+            transition: transform 0.15s;
+        }
+        .modal-overlay.open .modal { transform: scale(1); }
+        .modal h2 { font-size: 0.95rem; font-weight: 600; color: #fff; }
+        .modal-field { display: flex; flex-direction: column; gap: 0.3rem; }
+        .modal-label { font-size: 0.72rem; color: #71717a; text-transform: uppercase; letter-spacing: 0.04em; }
+        .modal-input {
+            background: #050506;
+            border: 1px solid #222226;
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+            font-family: inherit;
+        }
+        .modal-input:focus { border-color: #3f3f46; }
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.4rem;
+        }
+        .modal-btn {
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #e4e4e7;
+            padding: 0.45rem 0.85rem;
+            border-radius: 7px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .modal-btn:hover { background: #27272a; color: #fff; }
+        .modal-btn.primary { background: #fff; color: #000; border-color: #fff; font-weight: 600; }
+        .modal-btn.primary:hover { background: #e4e4e7; }
+        .modal-btn.danger { color: #ef4444; border-color: transparent; background: transparent; padding-left: 0; }
+        .modal-btn.danger:hover { color: #f87171; }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <h1 class="brand" id="title" title="Click to rename">✦-- S💀ch.🖕🏻n --✦</h1>
+
+        <form class="search-box" id="searchForm" autocomplete="off">
+            <input 
+                type="search" 
+                id="srch" 
+                class="search-input" 
+                placeholder="Search across all sites... (Comma for multiple)" 
+                autofocus
+            >
+        </form>
+
+        <nav class="links-grid" id="linksGrid"></nav>
+
+        <div>
+            <div class="chips-container" id="chipsList"></div>
+            <p class="hint">Click chip to edit or delete site • Press '/' to focus search</p>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Minimalist Custom Site Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2 id="modalTitle">Site Settings</h2>
+            <div class="modal-field">
+                <label class="modal-label" for="siteName">Name</label>
+                <input type="text" id="siteName" class="modal-input" placeholder="e.g. YouTube">
+            </div>
+            <div class="modal-field">
+                <label class="modal-label" for="siteUrl">Search URL</label>
+                <input type="text" id="siteUrl" class="modal-input" placeholder="https://example.com/search?q=">
+            </div>
+            <div class="modal-actions">
+                <div>
+                    <button type="button" class="modal-btn danger" id="deleteBtn">Delete</button>
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                    <button type="button" class="modal-btn" id="cancelBtn">Cancel</button>
+                    <button type="button" class="modal-btn primary" id="saveBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const KEY = 'sachin_sites_v7';
+        const TITLE_KEY = 'sachin_title_v3';
+        const DEFAULT_SITES = [
+            { id: "rogmovies", name: "RogMovies", url: "https://rogmovies.wtf/search.html?q={q}" },
+            { id: "flixeo", name: "Flixeo TV", url: "https://flixeo.tv/search?q={q}" },
+            { id: "multimovies", name: "MultiMovies", url: "https://multimovies.garden/search?q={q}" }
+        ];
+
+        let sites = (() => {
+            try {
+                let saved = JSON.parse(localStorage.getItem(KEY));
+                if (saved) {
+                    return saved.map(s => ({
+                        ...s,
+                        url: s.url.replace(/&q=\{q\}$/, '')
+                    }));
+                }
+                return DEFAULT_SITES;
+            } catch { return DEFAULT_SITES; }
+        })();
+
+        let titleText = localStorage.getItem(TITLE_KEY) || '✦-- S💀ch.🖕🏻n --✦';
+
+        const save = () => localStorage.setItem(KEY, JSON.stringify(sites));
+        const $ = id => document.getElementById(id);
+        const searchInput = $('srch');
+        const titleEl = $('title');
+        const linksGrid = $('linksGrid');
+        const chipsList = $('chipsList');
+        const toast = $('toast');
+
+        // Modal elements
+        const modalOverlay = $('modalOverlay');
+        const modalTitle = $('modalTitle');
+        const siteNameInput = $('siteName');
+        const siteUrlInput = $('siteUrl');
+        const saveBtn = $('saveBtn');
+        const cancelBtn = $('cancelBtn');
+        const deleteBtn = $('deleteBtn');
+        let editingIndex = -1;
+
+        titleEl.textContent = titleText;
+        titleEl.onclick = () => {
+            const newT = prompt("Rename Header Title:", titleText);
+            if (newT !== null && newT.trim()) {
+                titleText = newT.trim();
+                localStorage.setItem(TITLE_KEY, titleText);
+                titleEl.textContent = titleText;
+            }
+        };
+
+        let toastTimer = null;
+        function notify(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        function render() {
+            // Render chips (all active)
+            let chipHtml = sites.map((s, i) => `
+                <div class="chip" onclick="openEditModal(${i})">
+                    <span class="chip-dot"></span>
+                    <span>${s.name}</span>
+                </div>
+            `).join('');
+
+            chipHtml += `<div class="chip chip-add" onclick="openAddModal()">+ Add Site</div>`;
+            chipsList.innerHTML = chipHtml;
+
+            // Render direct links
+            const val = searchInput.value.trim();
+            const term = val ? val.split(/[,;\n]+/)[0].trim() : '';
+            const enc = encodeURIComponent(term);
+
+            linksGrid.innerHTML = sites.map(s => {
+                const href = term ? (s.url.includes('{q}') ? s.url.replace('{q}', enc) : s.url + enc) : s.url.split('?')[0];
+                return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="link-card">
+                    <span>${s.name}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="7" y1="17" x2="17" y2="7"></line>
+                        <polyline points="7 7 17 7 17 17"></polyline>
+                    </svg>
+                </a>`;
+            }).join('');
+        }
+
+        // Modal Management
+        window.openAddModal = () => {
+            editingIndex = -1;
+            modalTitle.textContent = "Add Site";
+            siteNameInput.value = "";
+            siteUrlInput.value = "";
+            deleteBtn.style.display = "none";
+            modalOverlay.classList.add('open');
+            siteNameInput.focus();
+        };
+
+        window.openEditModal = (index) => {
+            editingIndex = index;
+            const s = sites[index];
+            modalTitle.textContent = `Edit ${s.name}`;
+            siteNameInput.value = s.name;
+            siteUrlInput.value = s.url;
+            deleteBtn.style.display = "inline-block";
+            modalOverlay.classList.add('open');
+            siteNameInput.focus();
+        };
+
+        function closeModal() {
+            modalOverlay.classList.remove('open');
+            editingIndex = -1;
+        }
+
+        cancelBtn.onclick = closeModal;
+        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) closeModal(); };
+
+        saveBtn.onclick = () => {
+            const name = siteNameInput.value.trim();
+            const url = siteUrlInput.value.trim();
+            if (!name || !url) return alert("Please provide both name and URL.");
+
+            if (editingIndex >= 0) {
+                sites[editingIndex] = { ...sites[editingIndex], name, url };
+                notify(`Updated ${name}`);
+            } else {
+                sites.push({ id: 'c_' + Date.now(), name, url });
+                notify(`Added ${name}`);
+            }
+
+            save();
+            render();
+            closeModal();
+        };
+
+        deleteBtn.onclick = () => {
+            if (editingIndex >= 0) {
+                const removedName = sites[editingIndex].name;
+                sites.splice(editingIndex, 1);
+                save();
+                render();
+                closeModal();
+                notify(`Deleted ${removedName}`);
+            }
+        };
+
+        // Real-time link updates
+        searchInput.oninput = render;
+
+        // Multi-search form submit
+        $('searchForm').onsubmit = (e) => {
+            e.preventDefault();
+            const val = searchInput.value.trim();
+            if (!val) return searchInput.focus();
+
+            const terms = val.split(/[,;\n]+/).map(t => t.trim()).filter(Boolean);
+            terms.forEach(term => {
+                const enc = encodeURIComponent(term);
+                sites.forEach(s => {
+                    const finalUrl = s.url.includes('{q}') ? s.url.replace('{q}', enc) : s.url + enc;
+                    window.open(finalUrl, '_blank');
+                });
+            });
+
+            notify(`Searching ${sites.length} sites... (Allow pop-ups if needed)`);
+        };
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('open')) {
+                closeModal();
+            } else if (e.key === '/' && document.activeElement !== searchInput && !modalOverlay.classList.contains('open')) {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+
+        render();
+    </script>
+</body>
+</html>
