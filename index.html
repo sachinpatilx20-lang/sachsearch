@@ -3,451 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SACH.IN Search</title>
+    <title>SACH.IN</title>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; }
         body {
-            background: #000;
-            color: #ededed;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+            background-color: black;
+            color: #eee;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            margin: 0;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            padding: 1.5rem 1rem;
-            -webkit-font-smoothing: antialiased;
+            padding: 8vh 16px 32px;
         }
-        .app {
+        h1 { letter-spacing: 6px; font-weight: 600; margin: 0 0 28px; }
+        .search { position: relative; width: 100%; max-width: 560px; }
+        #search {
             width: 100%;
-            max-width: 520px;
-            display: flex;
-            flex-direction: column;
-            gap: 1.1rem;
-            text-align: center;
-        }
-        .brand {
-            font-size: 1.75rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
+            padding: 14px 18px;
+            font-size: 18px;
             color: #fff;
-            cursor: pointer;
-            user-select: none;
-            transition: opacity 0.2s;
-        }
-        .brand:hover { opacity: 0.8; }
-        .search-box {
-            position: relative;
-            width: 100%;
-        }
-        .search-input {
-            width: 100%;
-            background: #09090b;
-            border: 1px solid #222226;
-            border-radius: 12px;
-            padding: 0.85rem 1.1rem;
-            color: #fff;
-            font-size: 1rem;
+            background: #151515;
+            border: 1px solid #333;
+            border-radius: 999px;
             outline: none;
-            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
         }
-        .search-input:focus {
-            background: #0d0d10;
-            border-color: #3f3f46;
-            box-shadow: 0 0 0 1px #3f3f46;
+        #search:focus { border-color: #888; }
+        #suggestions {
+            position: absolute; top: 56px; left: 0; right: 0;
+            background: #151515; border: 1px solid #333; border-radius: 14px;
+            overflow: hidden; z-index: 10; display: none;
         }
-        .search-input::placeholder { color: #52525b; font-size: 0.95rem; }
-        .links-grid {
+        #suggestions div { padding: 10px 18px; cursor: pointer; font-size: 15px; }
+        #suggestions div:hover { background: #262626; }
+        #suggestions small { color: #888; margin-left: 8px; }
+        .hint { color: #777; font-size: 13px; margin-top: 12px; }
+        .apps {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 0.45rem;
-        }
-        .link-card {
-            background: #09090b;
-            border: 1px solid #1c1c20;
-            color: #d4d4d8;
-            padding: 0.6rem 0.85rem;
-            border-radius: 9px;
-            font-size: 0.82rem;
-            font-weight: 500;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.15s ease;
-        }
-        .link-card:hover {
-            background: #141418;
-            border-color: #383842;
-            color: #fff;
-            transform: translateY(-1px);
-        }
-        .link-card svg {
-            color: #52525b;
-            transition: color 0.15s;
-        }
-        .link-card:hover svg { color: #e4e4e7; }
-        .chips-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 0.4rem;
-            margin-top: 0.1rem;
-        }
-        .chip {
-            background: #09090b;
-            border: 1px solid #222226;
-            color: #e4e4e7;
-            padding: 0.35rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.78rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            user-select: none;
-            transition: all 0.15s ease;
-        }
-        .chip:hover {
-            border-color: #3f3f46;
-            background: #121216;
-            color: #fff;
-        }
-        .chip-dot {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: #22c55e;
-            box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
-        }
-        .chip-add {
-            border-style: dashed;
-            color: #71717a;
-            border-color: #27272a;
-        }
-        .chip-add:hover {
-            border-color: #52525b;
-            color: #fff;
-        }
-        .hint {
-            font-size: 0.72rem;
-            color: #52525b;
-            margin-top: 0.35rem;
-        }
-        .toast {
-            position: fixed;
-            bottom: 1.8rem;
-            background: #18181b;
-            border: 1px solid #27272a;
-            color: #f4f4f5;
-            padding: 0.55rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.78rem;
-            opacity: 0;
-            transform: translateY(6px);
-            transition: opacity 0.2s, transform 0.2s;
-            pointer-events: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-        .toast.show { opacity: 1; transform: translateY(0); }
-        /* Minimalist Modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.15s;
-        }
-        .modal-overlay.open { opacity: 1; pointer-events: auto; }
-        .modal {
-            background: #0e0e11;
-            border: 1px solid #27272a;
-            border-radius: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
             width: 100%;
-            max-width: 360px;
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.85rem;
-            text-align: left;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.9);
-            transform: scale(0.96);
-            transition: transform 0.15s;
+            max-width: 700px;
+            margin-top: 36px;
         }
-        .modal-overlay.open .modal { transform: scale(1); }
-        .modal h2 { font-size: 0.95rem; font-weight: 600; color: #fff; }
-        .modal-field { display: flex; flex-direction: column; gap: 0.3rem; }
-        .modal-label { font-size: 0.72rem; color: #71717a; text-transform: uppercase; letter-spacing: 0.04em; }
-        .modal-input {
-            background: #050506;
-            border: 1px solid #222226;
-            border-radius: 8px;
-            padding: 0.6rem 0.8rem;
-            color: #fff;
-            font-size: 0.85rem;
-            outline: none;
-            font-family: inherit;
+        .apps a {
+            display: block; text-align: center; padding: 16px 8px;
+            background: #151515; border: 1px solid #2a2a2a; border-radius: 12px;
+            color: #eee; text-decoration: none; font-size: 15px;
+            transition: background .15s, transform .15s;
         }
-        .modal-input:focus { border-color: #3f3f46; }
-        .modal-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 0.4rem;
+        .apps a:hover { background: #262626; transform: translateY(-2px); }
+
+        #yt { width: 100%; max-width: 700px; margin-top: 36px; display: none; }
+        #yt h2 { font-size: 15px; color: #aaa; font-weight: 500; margin: 0 0 12px; }
+        #yt .status { color: #777; font-size: 14px; }
+        #yt .list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
         }
-        .modal-btn {
-            background: #18181b;
-            border: 1px solid #27272a;
-            color: #e4e4e7;
-            padding: 0.45rem 0.85rem;
-            border-radius: 7px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            font-family: inherit;
-            transition: all 0.15s;
+        #yt .card {
+            background: #151515; border: 1px solid #2a2a2a; border-radius: 12px;
+            overflow: hidden; color: #eee; text-decoration: none; display: block;
         }
-        .modal-btn:hover { background: #27272a; color: #fff; }
-        .modal-btn.primary { background: #fff; color: #000; border-color: #fff; font-weight: 600; }
-        .modal-btn.primary:hover { background: #e4e4e7; }
-        .modal-btn.danger { color: #ef4444; border-color: transparent; background: transparent; padding-left: 0; }
-        .modal-btn.danger:hover { color: #f87171; }
+        #yt .card:hover { background: #262626; }
+        #yt .card img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; background: #222; }
+        #yt .card .meta { padding: 8px 10px 10px; font-size: 13px; }
+        #yt .card .title { font-size: 14px; line-height: 1.3; margin-bottom: 4px; }
+        #yt .card .sub { color: #888; }
     </style>
 </head>
 <body>
-    <main class="app">
-        <h1 class="brand" id="title" title="Click to rename">✦-- S💀ch.🖕🏻n --✦</h1>
+    <h1>SACH.IN</h1>
 
-        <form class="search-box" id="searchForm" autocomplete="off">
-            <input 
-                type="search" 
-                id="srch" 
-                class="search-input" 
-                placeholder="Search across all sites... (Comma for multiple)" 
-                autofocus
-            >
-        </form>
+    <div class="search">
+        <input type="text" id="search" placeholder="Search" autocomplete="off" autofocus>
+        <div id="suggestions"></div>
+    </div>
+    <div class="hint">Enter = Google search. Click an app to search it with your text.</div>
 
-        <nav class="links-grid" id="linksGrid"></nav>
+    <div class="apps" id="apps"></div>
 
-        <div>
-            <div class="chips-container" id="chipsList"></div>
-            <p class="hint">Click chip to edit or delete site • Press '/' to focus search</p>
-        </div>
-    </main>
-
-    <div class="toast" id="toast"></div>
-
-    <!-- Minimalist Custom Site Modal -->
-    <div class="modal-overlay" id="modalOverlay">
-        <div class="modal">
-            <h2 id="modalTitle">Site Settings</h2>
-            <div class="modal-field">
-                <label class="modal-label" for="siteName">Name</label>
-                <input type="text" id="siteName" class="modal-input" placeholder="e.g. YouTube">
-            </div>
-            <div class="modal-field">
-                <label class="modal-label" for="siteUrl">Search URL</label>
-                <input type="text" id="siteUrl" class="modal-input" placeholder="https://example.com/search?q=">
-            </div>
-            <div class="modal-actions">
-                <div>
-                    <button type="button" class="modal-btn danger" id="deleteBtn">Delete</button>
-                </div>
-                <div style="display: flex; gap: 0.4rem;">
-                    <button type="button" class="modal-btn" id="cancelBtn">Cancel</button>
-                    <button type="button" class="modal-btn primary" id="saveBtn">Save</button>
-                </div>
-            </div>
-        </div>
+    <div id="yt">
+        <h2>YouTube results</h2>
+        <div class="status" id="ytStatus"></div>
+        <div class="list" id="ytList"></div>
     </div>
 
     <script>
-        const KEY = 'sachin_sites_v7';
-        const TITLE_KEY = 'sachin_title_v3';
-        const DEFAULT_SITES = [
-            { id: "rogmovies", name: "RogMovies", url: "https://rogmovies.wtf/search.html?q={q}" },
-            { id: "flixeo", name: "Flixeo TV", url: "https://flixeo.tv/search?q={q}" },
-            { id: "multimovies", name: "MultiMovies", url: "https://multimovies.garden/search?q={q}" }
+        /* ---------- App tiles ---------- */
+        // [label, search URL prefix, noSearch (just open the site)]
+        const APPS = [
+            ["Netflix",     "https://www.netflix.com/search?q="],
+            ["Hotstar",     "https://www.hotstar.com/in/explore?search_query="],
+            ["Prime Video", "https://www.primevideo.com/search?ie=UTF8&ref_=atv_nb_sug&phrase="],
+            ["ZEE5",        "https://www.zee5.com/search?q="],
+            ["SonyLIV",     "https://www.sonyliv.com/search?q="],
+            ["YouTube",     "https://www.youtube.com/results?search_query="],
+            ["Spotify",     "https://open.spotify.com/search/"],
+            ["Google",      "https://www.google.com/search?q="],
+            ["WhatsApp",    "https://web.whatsapp.com/", true],
+            ["Telegram",    "https://web.telegram.org/", true],
+            ["Instagram",   "https://instagram.com/", true],
+            ["IMDb",        "https://www.imdb.com/find/?q="],
+            ["JustWatch",   "https://www.justwatch.com/in/search?q="],
+            ["X",           "https://x.com/search?q="],
+            ["Reddit",      "https://www.reddit.com/search/?q="]
         ];
 
-        let sites = (() => {
-            try {
-                let saved = JSON.parse(localStorage.getItem(KEY));
-                if (saved) {
-                    return saved.map(s => ({
-                        ...s,
-                        url: s.url.replace(/&q=\{q\}$/, '')
-                    }));
-                }
-                return DEFAULT_SITES;
-            } catch { return DEFAULT_SITES; }
-        })();
+        const input = document.getElementById("search");
+        const box = document.getElementById("suggestions");
+        const appsEl = document.getElementById("apps");
+        const ytBox = document.getElementById("yt");
+        const ytStatus = document.getElementById("ytStatus");
+        const ytList = document.getElementById("ytList");
 
-        let titleText = localStorage.getItem(TITLE_KEY) || '✦-- S💀ch.🖕🏻n --✦';
-
-        const save = () => localStorage.setItem(KEY, JSON.stringify(sites));
-        const $ = id => document.getElementById(id);
-        const searchInput = $('srch');
-        const titleEl = $('title');
-        const linksGrid = $('linksGrid');
-        const chipsList = $('chipsList');
-        const toast = $('toast');
-
-        // Modal elements
-        const modalOverlay = $('modalOverlay');
-        const modalTitle = $('modalTitle');
-        const siteNameInput = $('siteName');
-        const siteUrlInput = $('siteUrl');
-        const saveBtn = $('saveBtn');
-        const cancelBtn = $('cancelBtn');
-        const deleteBtn = $('deleteBtn');
-        let editingIndex = -1;
-
-        titleEl.textContent = titleText;
-        titleEl.onclick = () => {
-            const newT = prompt("Rename Header Title:", titleText);
-            if (newT !== null && newT.trim()) {
-                titleText = newT.trim();
-                localStorage.setItem(TITLE_KEY, titleText);
-                titleEl.textContent = titleText;
-            }
-        };
-
-        let toastTimer = null;
-        function notify(msg) {
-            toast.textContent = msg;
-            toast.classList.add('show');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+        function targetUrl(app) {
+            const q = input.value.trim();
+            const [, base, noSearch] = app;
+            return (noSearch || !q) ? base : base + encodeURIComponent(q);
         }
 
-        function render() {
-            // Render chips (all active)
-            let chipHtml = sites.map((s, i) => `
-                <div class="chip" onclick="openEditModal(${i})">
-                    <span class="chip-dot"></span>
-                    <span>${s.name}</span>
-                </div>
-            `).join('');
+        APPS.forEach(app => {
+            const a = document.createElement("a");
+            a.textContent = app[0];
+            a.href = app[1];
+            a.target = "_blank";
+            a.rel = "noopener";
+            a.addEventListener("click", () => { a.href = targetUrl(app); }); // uses current text
+            appsEl.appendChild(a);
+        });
 
-            chipHtml += `<div class="chip chip-add" onclick="openAddModal()">+ Add Site</div>`;
-            chipsList.innerHTML = chipHtml;
-
-            // Render direct links
-            const val = searchInput.value.trim();
-            const term = val ? val.split(/[,;\n]+/)[0].trim() : '';
-            const enc = encodeURIComponent(term);
-
-            linksGrid.innerHTML = sites.map(s => {
-                const href = term ? (s.url.includes('{q}') ? s.url.replace('{q}', enc) : s.url + enc) : s.url.split('?')[0];
-                return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="link-card">
-                    <span>${s.name}</span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="7" y1="17" x2="17" y2="7"></line>
-                        <polyline points="7 7 17 7 17 17"></polyline>
-                    </svg>
-                </a>`;
-            }).join('');
-        }
-
-        // Modal Management
-        window.openAddModal = () => {
-            editingIndex = -1;
-            modalTitle.textContent = "Add Site";
-            siteNameInput.value = "";
-            siteUrlInput.value = "";
-            deleteBtn.style.display = "none";
-            modalOverlay.classList.add('open');
-            siteNameInput.focus();
-        };
-
-        window.openEditModal = (index) => {
-            editingIndex = index;
-            const s = sites[index];
-            modalTitle.textContent = `Edit ${s.name}`;
-            siteNameInput.value = s.name;
-            siteUrlInput.value = s.url;
-            deleteBtn.style.display = "inline-block";
-            modalOverlay.classList.add('open');
-            siteNameInput.focus();
-        };
-
-        function closeModal() {
-            modalOverlay.classList.remove('open');
-            editingIndex = -1;
-        }
-
-        cancelBtn.onclick = closeModal;
-        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) closeModal(); };
-
-        saveBtn.onclick = () => {
-            const name = siteNameInput.value.trim();
-            const url = siteUrlInput.value.trim();
-            if (!name || !url) return alert("Please provide both name and URL.");
-
-            if (editingIndex >= 0) {
-                sites[editingIndex] = { ...sites[editingIndex], name, url };
-                notify(`Updated ${name}`);
-            } else {
-                sites.push({ id: 'c_' + Date.now(), name, url });
-                notify(`Added ${name}`);
-            }
-
-            save();
-            render();
-            closeModal();
-        };
-
-        deleteBtn.onclick = () => {
-            if (editingIndex >= 0) {
-                const removedName = sites[editingIndex].name;
-                sites.splice(editingIndex, 1);
-                save();
-                render();
-                closeModal();
-                notify(`Deleted ${removedName}`);
-            }
-        };
-
-        // Real-time link updates
-        searchInput.oninput = render;
-
-        // Multi-search form submit
-        $('searchForm').onsubmit = (e) => {
-            e.preventDefault();
-            const val = searchInput.value.trim();
-            if (!val) return searchInput.focus();
-
-            const terms = val.split(/[,;\n]+/).map(t => t.trim()).filter(Boolean);
-            terms.forEach(term => {
-                const enc = encodeURIComponent(term);
-                sites.forEach(s => {
-                    const finalUrl = s.url.includes('{q}') ? s.url.replace('{q}', enc) : s.url + enc;
-                    window.open(finalUrl, '_blank');
-                });
-            });
-
-            notify(`Searching ${sites.length} sites... (Allow pop-ups if needed)`);
-        };
-
-        // Keyboard shortcuts
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modalOverlay.classList.contains('open')) {
-                closeModal();
-            } else if (e.key === '/' && document.activeElement !== searchInput && !modalOverlay.classList.contains('open')) {
-                e.preventDefault();
-                searchInput.focus();
+        input.addEventListener("keydown", e => {
+            if (e.key === "Enter" && input.value.trim()) {
+                window.open(targetUrl(APPS.find(a => a[0] === "Google")), "_blank");
             }
         });
 
-        render();
+        /* ---------- IMDb suggestions via microlink ---------- */
+        function imdbKey(query) {
+            // IMDb's suggestion files are lowercase with underscores for spaces/symbols
+            return query.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_");
+        }
+
+        function walkStrings(node, out = []) {
+            if (typeof node === "string") out.push(node);
+            else if (node && typeof node === "object") Object.values(node).forEach(v => walkStrings(v, out));
+            return out;
+        }
+
+        // IMDb returns JSONP: imdb$spider({...}). Pull the {...} out of whatever string holds it.
+        function parseImdbPayload(strings) {
+            for (const s of strings) {
+                const m = s.match(/\{[\s\S]*"d"\s*:\s*\[[\s\S]*\}/);
+                if (m) { try { return JSON.parse(m[0]); } catch (e) { /* keep looking */ } }
+            }
+            return null;
+        }
+
+        async function imdbViaMicrolink(query) {
+            const key = imdbKey(query);
+            const url = `https://sg.media-imdb.com/suggests/${key.charAt(0)}/${encodeURIComponent(key)}.json`;
+            const response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`);
+            const json = await response.json();
+            const payload = parseImdbPayload(walkStrings(json));
+            return payload && Array.isArray(payload.d) ? payload.d : null;
+        }
+
+        // Fallback if microlink doesn't hand back the body: load IMDb's JSONP directly.
+        function imdbViaJsonp(query) {
+            return new Promise(resolve => {
+                const key = imdbKey(query);
+                const cb = "imdb$" + key;
+                const s = document.createElement("script");
+                const done = d => { delete window[cb]; s.remove(); resolve(d); };
+                window[cb] = data => done(data && Array.isArray(data.d) ? data.d : null);
+                s.onerror = () => done(null);
+                s.src = `https://sg.media-imdb.com/suggests/${key.charAt(0)}/${encodeURIComponent(key)}.json`;
+                document.head.appendChild(s);
+            });
+        }
+
+        async function getImdbSuggestions(query) {
+            let items = null;
+            try { items = await imdbViaMicrolink(query); } catch (e) { /* fall through */ }
+            if (!items || !items.length) items = await imdbViaJsonp(query);
+            return items || [];
+        }
+
+        function showSuggestions(items) {
+            box.innerHTML = "";
+            items.slice(0, 6).forEach(item => {
+                const row = document.createElement("div");
+                row.textContent = item.l;
+                if (item.y) {
+                    const y = document.createElement("small");
+                    y.textContent = item.y;
+                    row.appendChild(y);
+                }
+                row.addEventListener("click", () => {
+                    input.value = item.l;
+                    box.style.display = "none";
+                    input.focus();
+                    scheduleYouTube();
+                });
+                box.appendChild(row);
+            });
+            box.style.display = box.children.length ? "block" : "none";
+        }
+
+        /* ---------- YouTube results via allorigins ---------- */
+        const ytCache = new Map();
+
+        async function youtubeViaAllOrigins(searchQuery) {
+            const response = await fetch(
+                `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.youtube.com/results?search_query=' + encodeURIComponent(searchQuery))}`
+            );
+            const json = await response.json();
+            const html = json.contents || "";
+            const m = html.match(/ytInitialData\s*=\s*(\{[\s\S]*?\});\s*<\/script>/);
+            if (!m) return [];
+            const data = JSON.parse(m[1]);
+
+            const videos = [];
+            const seen = new Set();
+            (function walk(n) {
+                if (videos.length >= 8 || !n || typeof n !== "object") return;
+                const v = n.videoRenderer;
+                if (v && v.videoId && !seen.has(v.videoId)) {
+                    seen.add(v.videoId);
+                    videos.push({
+                        id: v.videoId,
+                        title: (v.title && v.title.runs && v.title.runs[0] && v.title.runs[0].text) || "Untitled",
+                        channel: (v.ownerText && v.ownerText.runs && v.ownerText.runs[0] && v.ownerText.runs[0].text) || "",
+                        length: (v.lengthText && v.lengthText.simpleText) || ""
+                    });
+                }
+                for (const k in n) walk(n[k]);
+            })(data);
+            return videos;
+        }
+
+        function renderYouTube(videos, searchQuery) {
+            ytList.innerHTML = "";
+            if (!videos.length) {
+                ytStatus.textContent = "No results (the proxy may be rate-limited or blocked). ";
+                const a = document.createElement("a");
+                a.href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(searchQuery);
+                a.target = "_blank"; a.rel = "noopener";
+                a.style.color = "#8ab4ff";
+                a.textContent = "Open on YouTube";
+                ytStatus.appendChild(a);
+                return;
+            }
+            ytStatus.textContent = "";
+            videos.forEach(v => {
+                const a = document.createElement("a");
+                a.className = "card";
+                a.href = "https://www.youtube.com/watch?v=" + encodeURIComponent(v.id);
+                a.target = "_blank"; a.rel = "noopener";
+
+                const img = document.createElement("img");
+                img.src = `https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/mqdefault.jpg`;
+                img.alt = "";
+                img.loading = "lazy";
+
+                const meta = document.createElement("div");
+                meta.className = "meta";
+                const t = document.createElement("div");
+                t.className = "title";
+                t.textContent = v.title;
+                const sub = document.createElement("div");
+                sub.className = "sub";
+                sub.textContent = [v.channel, v.length].filter(Boolean).join(" · ");
+                meta.append(t, sub);
+
+                a.append(img, meta);
+                ytList.appendChild(a);
+            });
+        }
+
+        let ytToken = 0;
+        async function loadYouTube(searchQuery) {
+            const token = ++ytToken;
+            ytBox.style.display = "block";
+            ytList.innerHTML = "";
+            ytStatus.textContent = "Loading…";
+            let videos;
+            if (ytCache.has(searchQuery)) {
+                videos = ytCache.get(searchQuery);
+            } else {
+                try { videos = await youtubeViaAllOrigins(searchQuery); } catch (e) { videos = []; }
+                if (videos.length) ytCache.set(searchQuery, videos);
+            }
+            if (token !== ytToken) return; // a newer search replaced this one
+            renderYouTube(videos, searchQuery);
+        }
+
+        /* ---------- Input wiring ---------- */
+        let sugTimer, ytTimer, sugToken = 0;
+
+        input.addEventListener("input", () => {
+            const q = input.value.trim();
+            clearTimeout(sugTimer);
+            if (!q) { box.style.display = "none"; ytBox.style.display = "none"; ytToken++; return; }
+            sugTimer = setTimeout(async () => {
+                const token = ++sugToken;
+                const items = await getImdbSuggestions(q);
+                if (token === sugToken) showSuggestions(items);
+            }, 250);
+            scheduleYouTube();
+        });
+
+        function scheduleYouTube() {
+            clearTimeout(ytTimer);
+            const q = input.value.trim();
+            if (q.length < 3) return;
+            ytTimer = setTimeout(() => loadYouTube(q), 800);
+        }
+
+        document.addEventListener("click", e => {
+            if (!e.target.closest(".search")) box.style.display = "none";
+        });
     </script>
 </body>
 </html>
