@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SACH.IN</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 1rem;
+      background: #000;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #fff;
+    }
+
+    .links-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .link-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .link-item:hover {
+      background: #111;
+      border-color: #555;
+    }
+
+    .link-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .link-url {
+      font-size: 0.8rem;
+      color: #777;
+      margin-top: 2px;
+      word-break: break-all;
+    }
+
+    .delete-action {
+      color: #555;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding-left: 12px;
+      user-select: none;
+    }
+
+    .delete-action:hover {
+      color: #fff;
+    }
+
+    .empty-note {
+      text-align: center;
+      color: #666;
+      font-size: 0.9rem;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Search Query Input (Press Enter or click link) -->
+    <input 
+      type="search" 
+      id="query" 
+      placeholder="Type query (Press Enter to open first site)..." 
+      autofocus 
+      autocomplete="off"
+    >
+
+    <!-- Add Link Input (Press Enter to add) -->
+    <input 
+      type="text" 
+      id="new-link" 
+      placeholder="Paste search URL & press Enter (e.g. https://domain.com/search?q=)"
+      autocomplete="off"
+    >
+
+    <!-- Links List -->
+    <div class="links-list" id="links-container"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'user_search_links';
+
+    function getSites() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { return JSON.parse(saved); } catch(e) {}
+      }
+      return [];
+    }
+
+    function saveSites(sites) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sites));
+      render();
+    }
+
+    function getFullUrl(urlPattern, query) {
+      const q = encodeURIComponent(query.trim());
+      if (urlPattern.includes('%s')) {
+        return urlPattern.replace('%s', q);
+      }
+      return urlPattern + q;
+    }
+
+    function render() {
+      const sites = getSites();
+      const container = document.getElementById('links-container');
+      const query = document.getElementById('query').value;
+
+      if (sites.length === 0) {
+        container.innerHTML = '<div class="empty-note">No search links added yet. Paste a link above and press Enter.</div>';
+        return;
+      }
+
+      container.innerHTML = sites.map(site => {
+        const fullUrl = getFullUrl(site.url, query);
+        return `
+          <div class="link-item" onclick="openLink('${site.id}')" style="cursor:pointer;">
+            <div style="overflow:hidden;">
+              <div class="link-name">${escapeHtml(site.name)}</div>
+              <div class="link-url">${escapeHtml(site.url)}</div>
+            </div>
+            <span class="delete-action" onclick="deleteLink('${site.id}', event)" title="Remove">&times;</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openLink(id) {
+      const sites = getSites();
+      const site = sites.find(s => s.id === id);
+      if (!site) return;
+      const query = document.getElementById('query').value;
+      window.open(getFullUrl(site.url, query), '_blank');
+    }
+
+    function deleteLink(id, e) {
+      if (e) e.stopPropagation();
+      const sites = getSites().filter(s => s.id !== id);
+      saveSites(sites);
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    // Add link when pressing Enter in #new-link
+    document.getElementById('new-link').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        let val = e.target.value.trim();
+        if (!val) return;
+
+        if (!val.startsWith('http://') && !val.startsWith('https://')) {
+          val = 'https://' + val;
+        }
+
+        let name = '';
+        try {
+          name = new URL(val).hostname.replace(/^www\./, '');
+        } catch (_) {
+          name = val;
+        }
+
+        const sites = getSites();
+        sites.push({
+          id: Date.now().toString(),
+          name: name,
+          url: val
+        });
+
+        saveSites(sites);
+        e.target.value = '';
+      }
+    });
+
+    // Search / update links on query input
+    const queryInput = document.getElementById('query');
+    queryInput.addEventListener('input', render);
+    queryInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const sites = getSites();
+        if (sites.length > 0) {
+          openLink(sites[0].id);
+        }
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
